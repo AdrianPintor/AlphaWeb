@@ -1,0 +1,135 @@
+@startuml
+
+User --> Artist
+Artist --> ArtistCalendar
+User --> Event
+User --> Billing
+Billing --> Bills
+ArtistCalendar --> Show
+Event --> Contract
+Artist --> Contract
+User --> Contract
+Event --> Booking
+Artist --> Availability
+Event --> Offer
+
+class User {
+    Enterprise Name
+    Personal Name
+    Email
+    Telephone Contact
+    Address
+    RRSS
+    + getEnterpriseName(): String
+    + getPersonalName(): String
+    + getEmail(): String
+    + getTelephoneContact(): String
+    + getAddress(): String
+    + getRRSS(): String
+}
+
+class Artist {
+    Artistic Name
+    Photos/Videos
+    Personal Information
+    RRSS
+    Technical Rider
+    + getArtisticName(): String
+    + getPhotosVideos(): List<Media>
+    + getPersonalInformation(): String
+    + getRRSS(): String
+    + getTechnicalRider(): String
+}
+
+class ArtistCalendar {
+    Availability Schedule
+    + getAvailabilitySchedule(): Schedule
+}
+
+class Show {
+    LocalDate
+    Hour
+    Location
+    + getLocalDate(): LocalDate
+    + getHour(): Time
+    + getLocation(): String
+}
+
+class Event {
+    Information
+    Photos/Videos
+    Enterprise Collabs
+    Description Request
+    + getInformation(): String
+    + getPhotosVideos(): List<Media>
+    + getEnterpriseCollabs(): List<Enterprise>
+    + getDescriptionRequest(): String
+}
+
+class Contract {
+    ContractID
+    LocalDate
+    Terms
+    Artist
+    User
+    Event
+    + getContractID(): Long
+    + getLocalDate(): LocalDate
+    + getTerms(): String
+    + getArtist(): Artist
+    + getUser(): User
+    + getEvent(): Event
+}
+
+class Booking {
+    BookingID
+    LocalDate
+    Event
+    User
+    + getBookingID(): Long
+    + getLocalDate(): LocalDate
+    + getEvent(): Event
+    + getUser(): User
+}
+
+class Availability {
+    AvailabilityID
+    LocalDate
+    Artist
+    Status
+    + getAvailabilityID(): Long
+    + getLocalDate(): LocalDate
+    + getArtist(): Artist
+    + getStatus(): String
+}
+
+class Offer {
+    OfferID
+    LocalDate
+    Terms
+    Artist
+    Event
+    + getOfferID(): Long
+    + getLocalDate(): LocalDate
+    + getTerms(): String
+    + getArtist(): Artist
+    + getEvent(): Event
+}
+
+class Billing {
+    DNI/CIF
+    Bills
+    Billing Address
+    + getDNI_CIF(): String
+    + getBills(): List<Bills>
+    + getBillingAddress(): String
+}
+
+enum Bills {
+    Paid
+    Unpaid
+    Issued
+    Unissued
+}
+
+@enduml
