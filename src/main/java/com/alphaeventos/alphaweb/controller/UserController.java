@@ -1,45 +1,48 @@
 package com.alphaeventos.alphaweb.controller;
 
-import com.alphaeventos.alphaweb.services.UserService;
+import com.alphaeventos.alphaweb.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import com.alphaeventos.alphaweb.models.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
     @Autowired
-    private UserService userService;
+    private UserRepository userRepository;
 
     @GetMapping
     public List<User> getAllUsers() {
-        return userService.findAll();
+        return userRepository.findAll();
     }
 
     @GetMapping("/{id}")
-    public Optional<User> getUserById(@PathVariable Long id) {
-        return userService.findById(id);
+    public User getUserById(@PathVariable Long id) {
+        return userRepository.findById(id).orElse(null);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public User createUser(@RequestBody User user) {
-        return userService.save(user);
+        return userRepository.save(user);
     }
 
     @PutMapping("/{id}")
     public User updateUser(@PathVariable Long id, @RequestBody User user) {
-        return userService.save(user);
-    }
-
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteUser(@PathVariable Long id) {
-        userService.deleteById(id);
+        User existingUser = userRepository.findById(id).orElse(null);
+        if (existingUser != null) {
+            existingUser.setEnterpriseName(user.getEnterpriseName());
+            existingUser.setPersonalName(user.getPersonalName());
+            existingUser.setEmail(user.getEmail());
+            existingUser.setTelephoneContact(user.getTelephoneContact());
+            existingUser.setAddress(user.getAddress());
+            existingUser.setRrss(user.getRrss());
+            return userRepository.save(existingUser);
+        }
+        return null;
     }
 }

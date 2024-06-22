@@ -3,6 +3,7 @@ package com.alphaeventos.alphaweb.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.net.URL;
 import java.util.List;
 
 @Entity
@@ -14,9 +15,9 @@ public class Artist {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String artisticName;
-    private String photosVideos;
+    private URL photosVideos;
     private String personalInformation;
-    private String rrss;  // Redes Sociales
+    private URL rrss;  // Redes Sociales
     private String technicalRider;
 
     @OneToOne(mappedBy = "artist")
