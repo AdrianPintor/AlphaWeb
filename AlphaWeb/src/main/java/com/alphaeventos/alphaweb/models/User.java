@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.net.URL;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
@@ -17,10 +19,12 @@ public class User {
     private Long id;
     private String enterpriseName;
     private String personalName;
+    private String username;
+    private String password;
     private String email;
     private int telephoneContact;
     private String address;
-    private String rrss;  // Redes Sociales
+    private URL rrss;  // Redes Sociales
 
     @OneToMany(mappedBy = "user")
     private List<Event> events;
@@ -30,4 +34,7 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<Contract> contracts;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    private Collection<Role> roles;
 }

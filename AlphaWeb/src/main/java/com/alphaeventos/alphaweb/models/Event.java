@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.net.URL;
 import java.util.List;
 
 @Entity
@@ -16,7 +17,7 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String information;
-    private String photosVideos;
+    private URL photosVideos;
     private String enterpriseCollabs;
     private String descriptionRequest;
 
