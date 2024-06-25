@@ -1,5 +1,6 @@
 package com.alphaeventos.alphaweb;
 
+import com.alphaeventos.alphaweb.models.Role;
 import com.alphaeventos.alphaweb.models.User;
 import com.alphaeventos.alphaweb.repository.UserRepository;
 import com.alphaeventos.alphaweb.services.UserService;
@@ -13,9 +14,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,7 +26,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 @DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.AUTO_CONFIGURED)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 class UserRepositoryTest {
 
     @Autowired
@@ -49,6 +53,7 @@ class UserRepositoryTest {
 
 @SpringBootTest
 @Transactional
+@ActiveProfiles("test")
 class UserServiceTest {
 
     @Autowired
@@ -101,6 +106,7 @@ class UserServiceTest {
 }
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class UserControllerTest {
 
     @LocalServerPort
@@ -123,14 +129,18 @@ class UserControllerTest {
         user.setEnterpriseName("Enterprise SL");
         user.setPersonalName("Ramoncin Perez");
         user.setEmail("ramoncin.perez@example.com");
+        user.setUsername("ramoncin.perez@example.com");
+        user.setPassword("futbol2000");
         user.setTelephoneContact(672456464);
         user.setAddress("Calle Goya, 5");
         user.setRrss(new URL("http://RPerez.com"));
         userRepository.save(user);
 
-        ResponseEntity<User[]> response = restTemplate.getForEntity(createURLWithPort("/users"), User[].class);
+        // Realizar solicitud GET
+        ResponseEntity<User[]> response = restTemplate.withBasicAuth(user.getUsername(), user.getPassword())
+                .getForEntity(createURLWithPort("/users"), User[].class);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(HttpStatus.OK.value(), response.getStatusCodeValue());
         User[] users = response.getBody();
         assertNotNull(users);
         assertEquals(1, users.length);
@@ -144,13 +154,14 @@ class UserControllerTest {
         user.setEnterpriseName("Enterprise SL");
         user.setPersonalName("Ramoncin Perez");
         user.setEmail("ramoncin.perez@example.com");
+        user.setUsername("ramoncin.perez@example.com");
+        user.setPassword("futbol2000");
         user.setTelephoneContact(672456464);
         user.setAddress("Calle Goya, 5");
         user.setRrss(new URL("http://RPerez.com"));
         user = userRepository.save(user);
 
-        ResponseEntity<User> response = restTemplate.getForEntity(createURLWithPort
-                ("/users/" + user.getId()), User.class);
+        ResponseEntity<User> response = restTemplate.getForEntity(createURLWithPort("/users/" + user.getId()), User.class);
 
         assertEquals(200, response.getStatusCodeValue());
         User returnedUser = response.getBody();
@@ -165,12 +176,13 @@ class UserControllerTest {
         user.setEnterpriseName("Enterprise SL");
         user.setPersonalName("Ramoncin Perez");
         user.setEmail("ramoncin.perez@example.com");
+        user.setUsername("ramoncin.perez@example.com");
+        user.setPassword("futbol2000");
         user.setTelephoneContact(672456464);
         user.setAddress("Calle Goya, 5");
         user.setRrss(new URL("http://RPerez.com"));
 
-        ResponseEntity<User> response = restTemplate.postForEntity(createURLWithPort
-                ("/users"), user, User.class);
+        ResponseEntity<User> response = restTemplate.postForEntity(createURLWithPort("/users"), user, User.class);
 
         assertEquals(201, response.getStatusCodeValue());
         User returnedUser = response.getBody();
@@ -185,6 +197,8 @@ class UserControllerTest {
         user.setEnterpriseName("Enterprise SL");
         user.setPersonalName("Ramoncin Perez");
         user.setEmail("ramoncin.perez@example.com");
+        user.setUsername("ramoncin.perez@example.com");
+        user.setPassword("futbol2000");
         user.setTelephoneContact(672456464);
         user.setAddress("Calle Goya, 5");
         user.setRrss(new URL("http://RPerez.com"));
@@ -196,8 +210,7 @@ class UserControllerTest {
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<User> entity = new HttpEntity<>(user, headers);
 
-        ResponseEntity<User> response = restTemplate.exchange(createURLWithPort
-                ("/users/" + user.getId()), HttpMethod.PUT, entity, User.class);
+        ResponseEntity<User> response = restTemplate.exchange(createURLWithPort("/users/" + user.getId()), HttpMethod.PUT, entity, User.class);
 
         assertEquals(200, response.getStatusCodeValue());
         User returnedUser = response.getBody();
@@ -212,6 +225,8 @@ class UserControllerTest {
         user.setEnterpriseName("Enterprise SL");
         user.setPersonalName("Ramoncin Perez");
         user.setEmail("ramoncin.perez@example.com");
+        user.setUsername("ramoncin.perez@example.com");
+        user.setPassword("futbol2000");
         user.setTelephoneContact(672456464);
         user.setAddress("Calle Goya, 5");
         user.setRrss(new URL("http://RPerez.com"));
@@ -220,11 +235,12 @@ class UserControllerTest {
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<User> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<Void> response = restTemplate.exchange(createURLWithPort
-                ("/users/" + user.getId()), HttpMethod.DELETE, entity, Void.class);
+        ResponseEntity<Void> response = restTemplate.exchange(createURLWithPort("/users/" + user.getId()), HttpMethod.DELETE, entity, Void.class);
 
         assertEquals(204, response.getStatusCodeValue());
+        assertFalse(userRepository.findById(user.getId()).isPresent());
     }
+
     private String createURLWithPort(String uri) {
         return "http://localhost:" + port + uri;
     }
