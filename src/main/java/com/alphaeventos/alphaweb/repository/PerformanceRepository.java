@@ -1,9 +1,9 @@
 package com.alphaeventos.alphaweb.repository;
 
-import com.alphaeventos.alphaweb.models.Show;
+import com.alphaeventos.alphaweb.models.Performance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ShowRepository extends JpaRepository<Show, Long> {
+public interface PerformanceRepository extends JpaRepository<Performance, Long> {
 }

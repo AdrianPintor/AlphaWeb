@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Show {
+public class Performance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,4 +21,10 @@ public class Show {
     @ManyToOne
     @JoinColumn(name = "artist_calendar_id")
     private ArtistCalendar artistCalendar;
+
+    public Performance(LocalDateTime date, String location, ArtistCalendar artistCalendar) {
+        this.date = date;
+        this.location = location;
+        this.artistCalendar = artistCalendar;
+    }
 }

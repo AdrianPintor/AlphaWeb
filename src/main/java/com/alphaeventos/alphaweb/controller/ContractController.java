@@ -2,44 +2,67 @@ package com.alphaeventos.alphaweb.controller;
 
 import com.alphaeventos.alphaweb.models.Contract;
 import com.alphaeventos.alphaweb.services.ContractService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/contracts")
 public class ContractController {
 
-    @Autowired
-    private ContractService contractService;
+    private final ContractService contractService;
+
+    public ContractController(ContractService contractService) {
+        this.contractService = contractService;
+    }
 
     @GetMapping
-    public List<Contract> getAllContracts() {
-        return contractService.findAll();
+    public ResponseEntity<List<Contract>> getAllContracts() {
+        List<Contract> contracts = contractService.findAll();
+        return ResponseEntity.ok(contracts);
     }
 
     @GetMapping("/{id}")
-    public Optional<Contract> getContractById(@PathVariable Long id) {
-        return contractService.findById(id);
+    public ResponseEntity<Contract> getContractById(@PathVariable Long id) {
+        Contract contract = contractService.findById(id).orElse(null);
+        if (contract == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(contract);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Contract createContract(@RequestBody Contract contract) {
-        return contractService.save(contract);
+    public ResponseEntity<Contract> createContract(@RequestBody Contract contract) {
+        Contract savedContract = contractService.save(contract);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedContract);
     }
 
     @PutMapping("/{id}")
-    public Contract updateContract(@PathVariable Long id, @RequestBody Contract contract) {
-        return contractService.save(contract);
+    public ResponseEntity<Contract> updateContract(@PathVariable Long id, @RequestBody Contract contract) {
+        Contract existingContract = contractService.findById(id).orElse(null);
+        if (existingContract == null) {
+            return ResponseEntity.notFound().build();
+        }
+        existingContract.setDate(contract.getDate());
+        existingContract.setTerms(contract.getTerms());
+        existingContract.setUser(contract.getUser());
+        existingContract.setArtist(contract.getArtist());
+        existingContract.setEvent(contract.getEvent());
+
+        Contract updatedContract = contractService.save(existingContract);
+        return ResponseEntity.ok(updatedContract);
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteContract(@PathVariable Long id) {
-        contractService.deleteById(id);
+    public ResponseEntity<Void> deleteContract(@PathVariable Long id) {
+        Contract contract = contractService.findById(id).orElse(null);
+        if (contract == null) {
+            return ResponseEntity.notFound().build();
+        }
+        contractService.delete(contract);
+        return ResponseEntity.noContent().build();
     }
 }

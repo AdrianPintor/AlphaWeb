@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Objects;
+
 
 @Entity
 @Data
@@ -23,5 +23,10 @@ public class ArtistCalendar {
     private Artist artist;
 
     @OneToMany(mappedBy = "artistCalendar")
-    private List<Show> shows;
+    private List<Performance> performances;
+
+    public ArtistCalendar(String availabilitySchedule, Artist artist) {
+        this.availabilitySchedule = availabilitySchedule;
+        this.artist = artist;
+    }
 }

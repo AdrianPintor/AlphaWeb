@@ -2,7 +2,6 @@ package com.alphaeventos.alphaweb.services;
 
 import com.alphaeventos.alphaweb.models.Contract;
 import com.alphaeventos.alphaweb.repository.ContractRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,8 +10,11 @@ import java.util.Optional;
 @Service
 public class ContractService {
 
-    @Autowired
-    private ContractRepository contractRepository;
+    private final ContractRepository contractRepository;
+
+    public ContractService(ContractRepository contractRepository) {
+        this.contractRepository = contractRepository;
+    }
 
     public List<Contract> findAll() {
         return contractRepository.findAll();
@@ -26,7 +28,7 @@ public class ContractService {
         return contractRepository.save(contract);
     }
 
-    public void deleteById(Long id) {
-        contractRepository.deleteById(id);
+    public void delete(Contract contract) {
+        contractRepository.delete(contract);
     }
 }

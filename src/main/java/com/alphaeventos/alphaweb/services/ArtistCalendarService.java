@@ -11,22 +11,21 @@ import java.util.Optional;
 @Service
 public class ArtistCalendarService {
 
-    @Autowired
     private ArtistCalendarRepository artistCalendarRepository;
 
-    public List<ArtistCalendar> findAll() {
-        return artistCalendarRepository.findAll();
+    public ArtistCalendar save(ArtistCalendar artistCalendar) {
+        return artistCalendarRepository.save(artistCalendar);
     }
 
     public Optional<ArtistCalendar> findById(Long id) {
         return artistCalendarRepository.findById(id);
     }
 
-    public ArtistCalendar save(ArtistCalendar artistCalendar) {
-        return artistCalendarRepository.save(artistCalendar);
+    public List<ArtistCalendar> findAll() {
+        return artistCalendarRepository.findAll();
     }
 
-    public void deleteById(Long id) {
+    public void delete(Long id) {
         artistCalendarRepository.deleteById(id);
     }
 }

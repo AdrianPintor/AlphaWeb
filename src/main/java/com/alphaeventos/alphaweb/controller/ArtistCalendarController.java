@@ -4,6 +4,7 @@ import com.alphaeventos.alphaweb.models.ArtistCalendar;
 import com.alphaeventos.alphaweb.services.ArtistCalendarService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,33 +14,30 @@ import java.util.Optional;
 @RequestMapping("/artist-calendars")
 public class ArtistCalendarController {
 
+    private final ArtistCalendarService artistCalendarService;
+
     @Autowired
-    private ArtistCalendarService artistCalendarService;
+    public ArtistCalendarController(ArtistCalendarService artistCalendarService) {
+        this.artistCalendarService = artistCalendarService;
+    }
 
     @GetMapping
-    public List<ArtistCalendar> getAllArtistCalendars() {
-        return artistCalendarService.findAll();
+    public ResponseEntity<List<ArtistCalendar>> getAllArtistCalendars() {
+        List<ArtistCalendar> artistCalendars = artistCalendarService.findAll();
+        return ResponseEntity.ok(artistCalendars);
     }
 
     @GetMapping("/{id}")
-    public Optional<ArtistCalendar> getArtistCalendarById(@PathVariable Long id) {
-        return artistCalendarService.findById(id);
+    public ResponseEntity<ArtistCalendar> getArtistCalendarById(@PathVariable Long id) {
+        Optional<ArtistCalendar> artistCalendarOptional = artistCalendarService.findById(id);
+        return artistCalendarOptional
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ArtistCalendar createArtistCalendar(@RequestBody ArtistCalendar artistCalendar) {
-        return artistCalendarService.save(artistCalendar);
-    }
-
-    @PutMapping("/{id}")
-    public ArtistCalendar updateArtistCalendar(@PathVariable Long id, @RequestBody ArtistCalendar artistCalendar) {
-        return artistCalendarService.save(artistCalendar);
-    }
-
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteArtistCalendar(@PathVariable Long id) {
-        artistCalendarService.deleteById(id);
+    public ResponseEntity<ArtistCalendar> createArtistCalendar(@RequestBody ArtistCalendar artistCalendar) {
+        ArtistCalendar savedArtistCalendar = artistCalendarService.save(artistCalendar);
+        return new ResponseEntity<>(savedArtistCalendar, HttpStatus.CREATED);
     }
 }

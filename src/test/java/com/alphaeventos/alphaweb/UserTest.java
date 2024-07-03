@@ -2,9 +2,12 @@ package com.alphaeventos.alphaweb;
 
 import com.alphaeventos.alphaweb.models.Role;
 import com.alphaeventos.alphaweb.models.User;
+import com.alphaeventos.alphaweb.repository.RoleRepository;
 import com.alphaeventos.alphaweb.repository.UserRepository;
 import com.alphaeventos.alphaweb.services.UserService;
 import jakarta.transaction.Transactional;
+import org.aspectj.lang.annotation.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,14 +21,15 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 
-@DataJpaTest
+@SpringBootTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 class UserRepositoryTest {
@@ -85,13 +89,32 @@ class UserServiceTest {
     }
 
     @Test
-    public void testSave() {
+    public void testSave() throws MalformedURLException {
         User user = new User();
         user.setEnterpriseName("Enterprise SL");
+        user.setPersonalName("Ramoncin Perez");
+        user.setUsername("ramoncin.perez");
+        user.setPassword("futbol2000");
+        user.setEmail("ramoncin.perez@example.com");
+        user.setTelephoneContact(672456464);
+        user.setAddress("Calle Goya, 5");
+        user.setRrss(new URL("http://RPerez.com"));
+
+        Role role = new Role();
+        role.setName("ROLE_USER");
+        Set<Role> roles = new HashSet<>();
+        roles.add(role);
+        user.setRoles(roles);
 
         User savedUser = userService.save(user);
         assertNotNull(savedUser);
         assertEquals("Enterprise SL", savedUser.getEnterpriseName());
+        assertEquals("Ramoncin Perez", savedUser.getPersonalName());
+        assertEquals("ramoncin.perez", savedUser.getUsername());
+        assertEquals("ramoncin.perez@example.com", savedUser.getEmail());
+        assertEquals(672456464, savedUser.getTelephoneContact());
+        assertEquals("Calle Goya, 5", savedUser.getAddress());
+        assertEquals(new URL("http://RPerez.com"), savedUser.getRrss());
     }
 
     @Test
@@ -116,28 +139,44 @@ class UserControllerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
     private TestRestTemplate restTemplate;
 
+    private User testUser;
+
     @BeforeEach
-    public void setup() {
+    void setup() throws MalformedURLException {
         userRepository.deleteAll();
+
+        testUser = new User();
+        testUser.setEnterpriseName("Enterprise SL");
+        testUser.setPersonalName("Ramoncin Perez");
+        testUser.setEmail("ramoncin.perez@example.com");
+        testUser.setUsername("ramoncin.perez@example.com");
+        testUser.setPassword("futbol2000");
+        testUser.setTelephoneContact(672456464);
+        testUser.setAddress("Calle Goya, 5");
+        testUser.setRrss(new URL("http://RPerez.com"));
+
+        Role userRole = new Role();
+        userRole.setName("ROLE_USER");
+        roleRepository.save(userRole);
+
+        testUser.setRoles(Set.of(userRole));
+        testUser = userRepository.save(testUser);
+    }
+
+    @AfterEach
+    void teardown() {
+        userRepository.deleteAll();
+        roleRepository.deleteAll();
     }
 
     @Test
-    public void testGetAllUsers() throws MalformedURLException {
-        User user = new User();
-        user.setEnterpriseName("Enterprise SL");
-        user.setPersonalName("Ramoncin Perez");
-        user.setEmail("ramoncin.perez@example.com");
-        user.setUsername("ramoncin.perez@example.com");
-        user.setPassword("futbol2000");
-        user.setTelephoneContact(672456464);
-        user.setAddress("Calle Goya, 5");
-        user.setRrss(new URL("http://RPerez.com"));
-        userRepository.save(user);
-
-        // Realizar solicitud GET
-        ResponseEntity<User[]> response = restTemplate.withBasicAuth(user.getUsername(), user.getPassword())
+    public void testGetAllUsers() {
+        ResponseEntity<User[]> response = restTemplate.withBasicAuth(testUser.getUsername(), "futbol2000")
                 .getForEntity(createURLWithPort("/users"), User[].class);
 
         assertEquals(HttpStatus.OK.value(), response.getStatusCodeValue());
@@ -149,21 +188,11 @@ class UserControllerTest {
     }
 
     @Test
-    public void testGetUserById() throws MalformedURLException {
-        User user = new User();
-        user.setEnterpriseName("Enterprise SL");
-        user.setPersonalName("Ramoncin Perez");
-        user.setEmail("ramoncin.perez@example.com");
-        user.setUsername("ramoncin.perez@example.com");
-        user.setPassword("futbol2000");
-        user.setTelephoneContact(672456464);
-        user.setAddress("Calle Goya, 5");
-        user.setRrss(new URL("http://RPerez.com"));
-        user = userRepository.save(user);
+    public void testGetUserById() {
+        ResponseEntity<User> response = restTemplate.withBasicAuth(testUser.getUsername(), testUser.getPassword())
+                .getForEntity(createURLWithPort("/users/" + testUser.getId()), User.class);
 
-        ResponseEntity<User> response = restTemplate.getForEntity(createURLWithPort("/users/" + user.getId()), User.class);
-
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(HttpStatus.OK.value(), response.getStatusCodeValue());
         User returnedUser = response.getBody();
         assertNotNull(returnedUser);
         assertEquals("Enterprise SL", returnedUser.getEnterpriseName());
@@ -172,47 +201,38 @@ class UserControllerTest {
 
     @Test
     public void testCreateUser() throws MalformedURLException {
-        User user = new User();
-        user.setEnterpriseName("Enterprise SL");
-        user.setPersonalName("Ramoncin Perez");
-        user.setEmail("ramoncin.perez@example.com");
-        user.setUsername("ramoncin.perez@example.com");
-        user.setPassword("futbol2000");
-        user.setTelephoneContact(672456464);
-        user.setAddress("Calle Goya, 5");
-        user.setRrss(new URL("http://RPerez.com"));
+        User newUser = new User();
+        newUser.setEnterpriseName("New Enterprise SL");
+        newUser.setPersonalName("Luis Lopez");
+        newUser.setEmail("luis.lopez@example.com");
+        newUser.setUsername("luis.lopez@example.com");
+        newUser.setPassword("password123");
+        newUser.setTelephoneContact(671234567);
+        newUser.setAddress("Calle Serrano, 10");
+        newUser.setRrss(new URL("http://LuisLopez.com"));
 
-        ResponseEntity<User> response = restTemplate.postForEntity(createURLWithPort("/users"), user, User.class);
+        ResponseEntity<User> response = restTemplate.withBasicAuth(testUser.getUsername(), testUser.getPassword())
+                .postForEntity(createURLWithPort("/users"), newUser, User.class);
 
-        assertEquals(201, response.getStatusCodeValue());
+        assertEquals(HttpStatus.CREATED.value(), response.getStatusCodeValue());
         User returnedUser = response.getBody();
         assertNotNull(returnedUser);
-        assertEquals("Enterprise SL", returnedUser.getEnterpriseName());
-        assertEquals("http://RPerez.com", returnedUser.getRrss().toString());
+        assertEquals("New Enterprise SL", returnedUser.getEnterpriseName());
+        assertEquals("http://LuisLopez.com", returnedUser.getRrss().toString());
     }
 
     @Test
     public void testUpdateUser() throws MalformedURLException {
-        User user = new User();
-        user.setEnterpriseName("Enterprise SL");
-        user.setPersonalName("Ramoncin Perez");
-        user.setEmail("ramoncin.perez@example.com");
-        user.setUsername("ramoncin.perez@example.com");
-        user.setPassword("futbol2000");
-        user.setTelephoneContact(672456464);
-        user.setAddress("Calle Goya, 5");
-        user.setRrss(new URL("http://RPerez.com"));
-        user = userRepository.save(user);
-
-        user.setEnterpriseName("Updated Enterprise SL");
-        user.setRrss(new URL("http://updatedRPerez.com"));
+        testUser.setEnterpriseName("Updated Enterprise SL");
+        testUser.setRrss(new URL("http://updatedRPerez.com"));
 
         HttpHeaders headers = new HttpHeaders();
-        HttpEntity<User> entity = new HttpEntity<>(user, headers);
+        HttpEntity<User> entity = new HttpEntity<>(testUser, headers);
 
-        ResponseEntity<User> response = restTemplate.exchange(createURLWithPort("/users/" + user.getId()), HttpMethod.PUT, entity, User.class);
+        ResponseEntity<User> response = restTemplate.withBasicAuth(testUser.getUsername(), testUser.getPassword())
+                .exchange(createURLWithPort("/users/" + testUser.getId()), HttpMethod.PUT, entity, User.class);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(HttpStatus.OK.value(), response.getStatusCodeValue());
         User returnedUser = response.getBody();
         assertNotNull(returnedUser);
         assertEquals("Updated Enterprise SL", returnedUser.getEnterpriseName());
@@ -220,25 +240,15 @@ class UserControllerTest {
     }
 
     @Test
-    public void testDeleteUser() throws MalformedURLException {
-        User user = new User();
-        user.setEnterpriseName("Enterprise SL");
-        user.setPersonalName("Ramoncin Perez");
-        user.setEmail("ramoncin.perez@example.com");
-        user.setUsername("ramoncin.perez@example.com");
-        user.setPassword("futbol2000");
-        user.setTelephoneContact(672456464);
-        user.setAddress("Calle Goya, 5");
-        user.setRrss(new URL("http://RPerez.com"));
-        user = userRepository.save(user);
-
+    public void testDeleteUser() {
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<User> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<Void> response = restTemplate.exchange(createURLWithPort("/users/" + user.getId()), HttpMethod.DELETE, entity, Void.class);
+        ResponseEntity<Void> response = restTemplate.withBasicAuth(testUser.getUsername(), testUser.getPassword())
+                .exchange(createURLWithPort("/users/" + testUser.getId()), HttpMethod.DELETE, entity, Void.class);
 
-        assertEquals(204, response.getStatusCodeValue());
-        assertFalse(userRepository.findById(user.getId()).isPresent());
+        assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatusCodeValue());
+        assertFalse(userRepository.findById(testUser.getId()).isPresent());
     }
 
     private String createURLWithPort(String uri) {

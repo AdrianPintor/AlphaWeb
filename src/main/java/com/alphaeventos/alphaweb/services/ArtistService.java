@@ -29,5 +29,9 @@ public class ArtistService {
     public void deleteById(Long id) {
         artistRepository.deleteById(id);
     }
+
+    public void delete(Artist artist) {
+        artistRepository.delete(artist);
+    }
 }
 

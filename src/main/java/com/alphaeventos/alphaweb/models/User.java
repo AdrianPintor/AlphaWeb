@@ -6,8 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.net.URL;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Data
@@ -36,5 +37,8 @@ public class User {
     private List<Contract> contracts;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    private Collection<Role> roles;
+    @JoinTable(name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<Role> roles = new HashSet<>();
 }
