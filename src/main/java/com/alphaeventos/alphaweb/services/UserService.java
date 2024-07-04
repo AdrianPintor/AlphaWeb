@@ -23,6 +23,15 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    public User save(User user) {
+        if (user.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        } else {
+            throw new IllegalArgumentException("Password cannot be null");
+        }
+        return userRepository.save(user);
+    }
+
     public Role saveRole(Role role) {
         return roleRepository.save(role);
     }
@@ -35,12 +44,12 @@ public class UserService {
         return userRepository.findById(id);
     }
 
-    public User save(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return userRepository.save(user);
-    }
 
     public void deleteById(Long id) {
         userRepository.deleteById(id);
+    }
+
+    public void deleteAll() {
+        userRepository.deleteAll();
     }
 }

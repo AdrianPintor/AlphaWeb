@@ -40,6 +40,6 @@ public class BillingController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteBilling(@PathVariable Long id) {
-        billingService.deleteById(id);
+        billingService.delete(id);
     }
 }

@@ -31,4 +31,8 @@ public class ContractService {
     public void delete(Contract contract) {
         contractRepository.delete(contract);
     }
+
+    public void deleteAll() {
+        contractRepository.deleteAll();
+    }
 }

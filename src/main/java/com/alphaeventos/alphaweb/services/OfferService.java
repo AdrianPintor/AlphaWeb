@@ -29,4 +29,8 @@ public class OfferService {
     public void deleteById(Long id) {
         offerRepository.deleteById(id);
     }
+
+    public void deleteAll() {
+        offerRepository.deleteAll();
+    }
 }

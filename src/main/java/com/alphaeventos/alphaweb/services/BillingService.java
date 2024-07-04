@@ -26,8 +26,12 @@ public class BillingService {
         return billingRepository.save(billing);
     }
 
-    public void deleteById(Long id) {
+    public void delete(Long id) {
         billingRepository.deleteById(id);
+    }
+
+    public void deleteAll() {
+        billingRepository.deleteAll();
     }
 }
 

@@ -33,5 +33,9 @@ public class ArtistService {
     public void delete(Artist artist) {
         artistRepository.delete(artist);
     }
+
+    public void deleteAll() {
+        artistRepository.deleteAll();
+    }
 }
 

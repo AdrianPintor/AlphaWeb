@@ -29,5 +29,9 @@ public class PerformanceService {
     public void delete(Long id) {
         performanceRepository.deleteById(id);
     }
+
+    public void deleteAll() {
+        performanceRepository.deleteAll();
+    }
 }
 

@@ -5,7 +5,7 @@ Artist --> ArtistCalendar
 User --> Event
 User --> Billing
 Billing --> Bills
-ArtistCalendar --> Show
+ArtistCalendar --> Perfomance
 Event --> Contract
 Artist --> Contract
 User --> Contract
@@ -46,7 +46,7 @@ class ArtistCalendar {
     + getAvailabilitySchedule(): Schedule
 }
 
-class Show {
+class Performance {
     LocalDate
     Hour
     Location

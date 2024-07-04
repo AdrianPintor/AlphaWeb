@@ -39,12 +39,19 @@ class PerformanceRepositoryTest {
     @Autowired
     private ArtistCalendarRepository artistCalendarRepository;
 
+    @BeforeEach
+    public void cleanup() {
+        performanceRepository.deleteAll();
+        artistCalendarRepository.deleteAll();
+        artistRepository.deleteAll();
+    }
+
     @Test
     public void testSavePerformance() {
-        Optional<Artist> artistOptional = artistRepository.findById(1L);
-        assertTrue(artistOptional.isPresent(), "Artist should be present");
+        Artist artist = new Artist();
+        artist.setArtisticName("Test Artist");
+        artist = artistRepository.save(artist);
 
-        Artist artist = artistOptional.get();
         ArtistCalendar artistCalendar = new ArtistCalendar("Weekdays 9-5", artist);
         artistCalendar = artistCalendarRepository.save(artistCalendar);
 
@@ -56,6 +63,7 @@ class PerformanceRepositoryTest {
         assertEquals("Test Location", savedPerformance.getLocation());
     }
 }
+
 @SpringBootTest
 @Transactional
 class PerformanceServiceTest {
@@ -73,6 +81,10 @@ class PerformanceServiceTest {
 
     @BeforeEach
     public void setup() {
+        performanceService.deleteAll();
+        artistCalendarService.deleteAll();
+        artistService.deleteAll();
+
         artist = new Artist();
         artist.setArtisticName("Test Artist");
         artist = artistService.save(artist);
@@ -85,10 +97,7 @@ class PerformanceServiceTest {
 
     @Test
     public void testSavePerformance() {
-        Optional<ArtistCalendar> artistCalendarOptional = artistCalendarService.findById(1L);
-        assertTrue(artistCalendarOptional.isPresent(), "ArtistCalendar should be present");
-
-        ArtistCalendar artistCalendar = artistCalendarOptional.get();
+        ArtistCalendar artistCalendar = artist.getArtistCalendar();
 
         Performance performance = new Performance();
         performance.setDate(LocalDateTime.now());
@@ -114,10 +123,7 @@ class PerformanceServiceTest {
         performance.setDate(LocalDateTime.now());
         performance.setLocation("Main Stage");
 
-        ArtistCalendar artistCalendar = new ArtistCalendar();
-        artistCalendar.setArtist(artist);
-        artistCalendar.setAvailabilitySchedule("Weekdays 9-5");
-        artistCalendar = artistCalendarService.save(artistCalendar);
+        ArtistCalendar artistCalendar = artist.getArtistCalendar();
 
         performance.setArtistCalendar(artistCalendar);
         Performance savedPerformance = performanceService.save(performance);
@@ -133,10 +139,7 @@ class PerformanceServiceTest {
         performance.setDate(LocalDateTime.now());
         performance.setLocation("Test Location");
 
-        ArtistCalendar artistCalendar = new ArtistCalendar();
-        artistCalendar.setArtist(artist);
-        artistCalendar.setAvailabilitySchedule("Weekdays 9-5");
-        artistCalendar = artistCalendarService.save(artistCalendar);
+        ArtistCalendar artistCalendar = artist.getArtistCalendar();
 
         performance.setArtistCalendar(artistCalendar);
         Performance savedPerformance = performanceService.save(performance);
@@ -147,6 +150,7 @@ class PerformanceServiceTest {
         assertFalse(deletedPerformanceOptional.isPresent());
     }
 }
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Transactional
 class PerformanceControllerTest {
@@ -160,13 +164,18 @@ class PerformanceControllerTest {
     @Autowired
     private PerformanceService performanceService;
 
-    private Artist artist;
-    private ArtistCalendar artistCalendar;
     @Autowired
     private ArtistCalendarService artistCalendarService;
 
+    private Artist artist;
+    private ArtistCalendar artistCalendar;
+
     @BeforeEach
     public void setup() throws MalformedURLException {
+        performanceService.deleteAll();
+        artistCalendarService.deleteAll();
+        artistService.deleteAll();
+
         artist = new Artist();
         artist.setArtisticName("Artist Name");
         artist.setPhotosVideos(new URL("http://example.com/videos"));
@@ -179,9 +188,13 @@ class PerformanceControllerTest {
         artistCalendar = artistCalendarService.save(artistCalendar);
     }
 
+    private TestRestTemplate authenticatedRestTemplate() {
+        return restTemplate.withBasicAuth("user", "password");
+    }
+
     @Test
     public void testGetAllPerformances() {
-        ResponseEntity<List> response = restTemplate.getForEntity("/performances", List.class);
+        ResponseEntity<List> response = authenticatedRestTemplate().getForEntity("/performances", List.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         List<Performance> performances = response.getBody();
         assertNotNull(performances);
@@ -190,13 +203,13 @@ class PerformanceControllerTest {
     @Test
     public void testGetPerformanceById() {
         Performance performance = new Performance(LocalDateTime.now(), "Main Stage", artistCalendar);
-        ResponseEntity<Performance> createResponse = restTemplate.postForEntity("/performances", performance, Performance.class);
+        ResponseEntity<Performance> createResponse = authenticatedRestTemplate().postForEntity("/performances", performance, Performance.class);
         assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
 
         Performance createdPerformance = createResponse.getBody();
         assertNotNull(createdPerformance);
 
-        ResponseEntity<Performance> getResponse = restTemplate.getForEntity("/performances/" + createdPerformance.getId(), Performance.class);
+        ResponseEntity<Performance> getResponse = authenticatedRestTemplate().getForEntity("/performances/" + createdPerformance.getId(), Performance.class);
         assertEquals(HttpStatus.OK, getResponse.getStatusCode());
 
         Performance fetchedPerformance = getResponse.getBody();
@@ -207,7 +220,7 @@ class PerformanceControllerTest {
     @Test
     public void testCreatePerformance() {
         Performance performance = new Performance(LocalDateTime.now(), "Main Stage", artistCalendar);
-        ResponseEntity<Performance> response = restTemplate.postForEntity("/performances", performance, Performance.class);
+        ResponseEntity<Performance> response = authenticatedRestTemplate().postForEntity("/performances", performance, Performance.class);
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
 
         Performance createdPerformance = response.getBody();

@@ -17,7 +17,9 @@ import org.springframework.http.ResponseEntity;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,27 +59,61 @@ class EventServiceTest {
     @Autowired
     private EventService eventService;
 
-    @Autowired
-    private UserService userService;
+    private Event event;
+
+    @BeforeEach
+    public void setup() throws MalformedURLException {
+        event = new Event();
+        event.setName("Test Event");
+        event.setInformation("Some information about the event");
+        event.setPhotosVideos(new URL("http://example.com/videos"));
+        event.setEnterpriseCollabs("Enterprise collaborations");
+        event.setDescriptionRequest("Description request details");
+    }
 
     @Test
-    public void testSaveEvent() throws MalformedURLException {
-        User user = new User();
-        user.setEnterpriseName("Test Enterprise");
-        user = userService.save(user);
-
-        Event event = new Event();
-        event.setName("Test Event");
-        event.setInformation("Test Information");
-        event.setPhotosVideos(new URL("http://example.com/event"));
-        event.setEnterpriseCollabs("Test Collaborations");
-        event.setDescriptionRequest("Test Description Request");
-        event.setUser(user);
-
+    public void testSaveEvent() {
         Event savedEvent = eventService.save(event);
+
         assertNotNull(savedEvent);
         assertNotNull(savedEvent.getId());
         assertEquals("Test Event", savedEvent.getName());
+        assertEquals("Some information about the event", savedEvent.getInformation());
+        assertEquals("http://example.com/videos", savedEvent.getPhotosVideos().toString());
+        assertEquals("Enterprise collaborations", savedEvent.getEnterpriseCollabs());
+        assertEquals("Description request details", savedEvent.getDescriptionRequest());
+    }
+
+    @Test
+    public void testFindAllEvents() {
+        eventService.save(event);
+        List<Event> events = eventService.findAll();
+        assertNotNull(events);
+        assertFalse(events.isEmpty());
+    }
+
+    @Test
+    public void testFindEventById() {
+        Event savedEvent = eventService.save(event);
+        Optional<Event> foundEvent = eventService.findById(savedEvent.getId());
+        assertTrue(foundEvent.isPresent());
+        assertEquals(savedEvent.getName(), foundEvent.get().getName());
+    }
+
+    @Test
+    public void testDeleteEvent() {
+        Event savedEvent = eventService.save(event);
+        eventService.delete(savedEvent);
+        Optional<Event> deletedEvent = eventService.findById(savedEvent.getId());
+        assertFalse(deletedEvent.isPresent());
+    }
+
+    @Test
+    public void testDeleteAllEvents() {
+        eventService.save(event);
+        eventService.deleteAll();
+        List<Event> events = eventService.findAll();
+        assertTrue(events.isEmpty());
     }
 }
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
