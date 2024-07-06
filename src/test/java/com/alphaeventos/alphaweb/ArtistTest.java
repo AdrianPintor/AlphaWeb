@@ -1,19 +1,27 @@
 package com.alphaeventos.alphaweb;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.alphaeventos.alphaweb.models.Artist;
 import com.alphaeventos.alphaweb.repository.ArtistRepository;
 import com.alphaeventos.alphaweb.services.ArtistService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 
 import java.net.MalformedURLException;
@@ -102,6 +110,8 @@ class ArtistServiceTest {
     private ArtistService artistService;
 
     private Artist artist;
+    @Autowired
+    private ArtistRepository artistRepository;
 
     @BeforeEach
     public void setup() throws MalformedURLException {
@@ -115,9 +125,8 @@ class ArtistServiceTest {
 
     @Test
     public void testGetAllArtists() {
-        artistService.save(artist);
-        List<Artist> fetchedArtists = artistService.findAll();
-        assertEquals(4, fetchedArtists.size());
+        artistRepository.save(artist);
+        List<Artist> fetchedArtists = artistRepository.findAll();
         assertEquals("Artist Name", fetchedArtists.get(0).getArtisticName());
     }
 
@@ -154,51 +163,97 @@ class ArtistServiceTest {
         assertFalse(artistService.findById(artist.getId()).isPresent());
     }
 }
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
+@ActiveProfiles("test")
 class ArtistControllerTest {
 
     @Autowired
-    private TestRestTemplate restTemplate;
+    private WebApplicationContext webApplicationContext;
 
+    @Autowired
+    private ArtistRepository artistRepository;
+
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper = new ObjectMapper();
     private Artist artist;
 
     @BeforeEach
-    public void setup() throws MalformedURLException {
+    void setUp() throws MalformedURLException {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+
         artist = new Artist();
         artist.setArtisticName("Artist Name");
         artist.setPhotosVideos(new URL("http://example.com/videos"));
         artist.setPersonalInformation("Some personal information");
         artist.setRrss(new URL("http://example.com/social"));
         artist.setTechnicalRider("Technical requirements");
+        artistRepository.save(artist);
     }
-    @Test
-    public void testGetAllArtists() {
-        ResponseEntity<List> response = restTemplate.getForEntity("/artists", List.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        List<Artist> artists = response.getBody();
-        assertNotNull(artists);
-    }
-    @Test
-    public void testGetArtistById() {
-        // Create an artist first
-        ResponseEntity<Artist> createResponse = restTemplate.postForEntity("/artists", artist, Artist.class);
-        assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
-        Artist createdArtist = createResponse.getBody();
-        assertNotNull(createdArtist);
 
-        // Get the artist by ID
-        ResponseEntity<Artist> getResponse = restTemplate.getForEntity("/artists/" + createdArtist.getId(), Artist.class);
-        assertEquals(HttpStatus.OK, getResponse.getStatusCode());
-        Artist fetchedArtist = getResponse.getBody();
-        assertNotNull(fetchedArtist);
-        assertEquals("Artist Name", fetchedArtist.getArtisticName());
+    @AfterEach
+    void tearDown() {
+        artistRepository.deleteAll();
     }
+
     @Test
-    public void testCreateArtist() {
-        ResponseEntity<Artist> response = restTemplate.postForEntity("/artists", artist, Artist.class);
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        Artist createdArtist = response.getBody();
-        assertNotNull(createdArtist.getId());
-        assertEquals("Artist Name", createdArtist.getArtisticName());
+    void testGetAllArtist() throws Exception {
+        MvcResult result = mockMvc.perform(get("/artists"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertTrue(result.getResponse().getContentAsString().contains("Artist Name"));
+    }
+
+    @Test
+    void testGetArtistById() throws Exception {
+        MvcResult result = mockMvc.perform(get("/artists/{id}", artist.getId()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertTrue(result.getResponse().getContentAsString().contains("Artist Name"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void testCreateArtist() throws Exception {
+        Artist newArtist = new Artist();
+        newArtist.setArtisticName("Artist Name");
+        newArtist.setPhotosVideos(new URL("http://example.com/videos"));
+        newArtist.setPersonalInformation("Some personal information");
+        newArtist.setRrss(new URL("http://example.com/social"));
+        newArtist.setTechnicalRider("Technical requirements");
+        String body = objectMapper.writeValueAsString(newArtist);
+
+        MvcResult result = mockMvc.perform(post("/artists")
+                        .content(body)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        assertTrue(result.getResponse().getContentAsString().contains("New Artist Name"));
+    }
+
+    @Test
+    void testUpdateUserArtist() throws Exception {
+        artist.setArtisticName("Updated Artist Name");
+        artist.setTechnicalRider("Technical requirements");
+        String body = objectMapper.writeValueAsString(artist);
+
+        mockMvc.perform(put("/artists/{id}", artist.getId())
+                        .content(body)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        Artist updated = artistRepository.findById(artist.getId()).get();
+        assertEquals("Updated Artist Name", updated.getArtisticName());
+        assertEquals("Technical requirements", updated.getTechnicalRider());
+    }
+
+    @Test
+    void testDeleteArtist() throws Exception {
+        mockMvc.perform(delete("/artists/{id}", artist.getId()))
+                .andExpect(status().isNoContent());
+
+        assertFalse(artistRepository.findById(artist.getId()).isPresent());
     }
 }

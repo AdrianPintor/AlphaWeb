@@ -32,7 +32,6 @@ public class AlphaWebApplication {
     @Bean
     CommandLineRunner run(UserService userService, ArtistService artistService) {
         return args -> {
-            // Adding roles
             Role role1 = userService.saveRole(new Role(null, "ROLE_CONTRIBUTOR"));
             Role role2 = userService.saveRole(new Role(null, "ROLE_ADMIN"));
 
@@ -44,7 +43,6 @@ public class AlphaWebApplication {
             roles2.add(role2);
             userService.save(new User(null, "Doe Enterprises", "Jane Doe", "jane.doe", "password123", "jane.doe@example.com", 123456789, "Main Street 1", new URL("http://JaneDoe.com"), null, null, null, roles2));
 
-            // Adding artists
             try {
                 artistService.save(new Artist(null, "Aiko Tanaka", new URL("http://example.com/aiko"), "Some personal info", new URL("http://example.com/rrss"), "Technical requirements", null, null));
                 artistService.save(new Artist(null, "Jonas Schmidt", new URL("http://example.com/jonas"), "Some personal info", new URL("http://example.com/rrss"), "Technical requirements", null, null));

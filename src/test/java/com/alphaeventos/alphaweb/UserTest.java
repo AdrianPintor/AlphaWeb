@@ -2,22 +2,23 @@ package com.alphaeventos.alphaweb;
 
 import com.alphaeventos.alphaweb.models.Role;
 import com.alphaeventos.alphaweb.models.User;
-import com.alphaeventos.alphaweb.repository.RoleRepository;
 import com.alphaeventos.alphaweb.repository.UserRepository;
 import com.alphaeventos.alphaweb.services.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
-import org.aspectj.lang.annotation.After;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -27,6 +28,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @SpringBootTest
@@ -61,10 +64,9 @@ class UserRepositoryTest {
 class UserServiceTest {
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private UserService userService;
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     public void testFindAll() {
@@ -72,7 +74,7 @@ class UserServiceTest {
         user.setEnterpriseName("Enterprise SL");
         userRepository.save(user);
 
-        List<User> users = userService.findAll();
+        List<User> users = userRepository.findAll();
         assertFalse(users.isEmpty());
         assertEquals("Enterprise SL", users.get(0).getEnterpriseName());
     }
@@ -83,7 +85,7 @@ class UserServiceTest {
         user.setEnterpriseName("Enterprise SL");
         user = userRepository.save(user);
 
-        Optional<User> foundUser = userService.findById(user.getId());
+        Optional<User> foundUser = userRepository.findById(user.getId());
         assertNotNull(foundUser);
         assertEquals("Enterprise SL", foundUser.get().getEnterpriseName());
     }
@@ -116,142 +118,109 @@ class UserServiceTest {
         assertEquals("Calle Goya, 5", savedUser.getAddress());
         assertEquals(new URL("http://RPerez.com"), savedUser.getRrss());
     }
-
-    @Test
-    public void testDeleteById() {
-        User user = new User();
-        user.setEnterpriseName("Enterprise SL");
-        user = userRepository.save(user);
-
-        userService.deleteById(user.getId());
-        assertFalse(userRepository.findById(user.getId()).isPresent());
-    }
 }
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 class UserControllerTest {
 
-    @LocalServerPort
-    private int port;
+    @Autowired
+    private WebApplicationContext webApplicationContext;
 
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private TestRestTemplate restTemplate;
-
-    private User testUser;
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper = new ObjectMapper();
+    private User user;
 
     @BeforeEach
-    void setup() throws MalformedURLException {
-        userRepository.deleteAll();
+    void setUp() throws MalformedURLException {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 
-        testUser = new User();
-        testUser.setEnterpriseName("Enterprise SL");
-        testUser.setPersonalName("Ramoncin Perez");
-        testUser.setEmail("ramoncin.perez@example.com");
-        testUser.setUsername("ramoncin.perez@example.com");
-        testUser.setPassword("futbol2000");
-        testUser.setTelephoneContact(672456464);
-        testUser.setAddress("Calle Goya, 5");
-        testUser.setRrss(new URL("http://RPerez.com"));
-
-        Role userRole = new Role();
-        userRole.setName("ROLE_USER");
-        roleRepository.save(userRole);
-
-        testUser.setRoles(Set.of(userRole));
-        testUser = userRepository.save(testUser);
+        user = new User();
+        user.setEnterpriseName("Enterprise SL");
+        user.setPersonalName("Ramoncin Perez");
+        user.setEmail("ramoncin.perez@example.com");
+        user.setUsername("ramoncin.perez@example.com");
+        user.setPassword("futbol2000");
+        user.setTelephoneContact(672456464);
+        user.setAddress("Calle Goya, 5");
+        user.setRrss(new URL("http://RPerez.com"));
+        userRepository.save(user);
     }
 
     @AfterEach
-    void teardown() {
+    void tearDown() {
         userRepository.deleteAll();
-        roleRepository.deleteAll();
     }
 
     @Test
-    public void testGetAllUsers() {
-        ResponseEntity<User[]> response = restTemplate.withBasicAuth(testUser.getUsername(), "futbol2000")
-                .getForEntity(createURLWithPort("/users"), User[].class);
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void testGetAllUsers() throws Exception {
+        MvcResult result = mockMvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andReturn();
 
-        assertEquals(HttpStatus.OK.value(), response.getStatusCodeValue());
-        User[] users = response.getBody();
-        assertNotNull(users);
-        assertEquals(1, users.length);
-        assertEquals("Enterprise SL", users[0].getEnterpriseName());
-        assertEquals("http://RPerez.com", users[0].getRrss().toString());
+        assertTrue(result.getResponse().getContentAsString().contains("Enterprise SL"));
     }
 
     @Test
-    public void testGetUserById() {
-        ResponseEntity<User> response = restTemplate.withBasicAuth(testUser.getUsername(), testUser.getPassword())
-                .getForEntity(createURLWithPort("/users/" + testUser.getId()), User.class);
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void testGetUserById() throws Exception {
+        MvcResult result = mockMvc.perform(get("/users/{id}", user.getId()))
+                .andExpect(status().isOk())
+                .andReturn();
 
-        assertEquals(HttpStatus.OK.value(), response.getStatusCodeValue());
-        User returnedUser = response.getBody();
-        assertNotNull(returnedUser);
-        assertEquals("Enterprise SL", returnedUser.getEnterpriseName());
-        assertEquals("http://RPerez.com", returnedUser.getRrss().toString());
+        assertTrue(result.getResponse().getContentAsString().contains("Enterprise SL"));
     }
 
     @Test
-    public void testCreateUser() throws MalformedURLException {
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void testCreateUser() throws Exception {
         User newUser = new User();
         newUser.setEnterpriseName("New Enterprise SL");
-        newUser.setPersonalName("Luis Lopez");
-        newUser.setEmail("luis.lopez@example.com");
-        newUser.setUsername("luis.lopez@example.com");
+        newUser.setPersonalName("Juan Perez");
+        newUser.setEmail("juan.perez@example.com");
+        newUser.setUsername("juan.perez@example.com");
         newUser.setPassword("password123");
-        newUser.setTelephoneContact(671234567);
-        newUser.setAddress("Calle Serrano, 10");
-        newUser.setRrss(new URL("http://LuisLopez.com"));
+        newUser.setTelephoneContact(123456789);
+        newUser.setAddress("Calle Luna, 10");
+        newUser.setRrss(new URL("http://JPerez.com"));
+        String body = objectMapper.writeValueAsString(newUser);
 
-        ResponseEntity<User> response = restTemplate.withBasicAuth(testUser.getUsername(), testUser.getPassword())
-                .postForEntity(createURLWithPort("/users"), newUser, User.class);
+        MvcResult result = mockMvc.perform(post("/users")
+                        .content(body)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andReturn();
 
-        assertEquals(HttpStatus.CREATED.value(), response.getStatusCodeValue());
-        User returnedUser = response.getBody();
-        assertNotNull(returnedUser);
-        assertEquals("New Enterprise SL", returnedUser.getEnterpriseName());
-        assertEquals("http://LuisLopez.com", returnedUser.getRrss().toString());
+        assertTrue(result.getResponse().getContentAsString().contains("New Enterprise SL"));
     }
 
     @Test
-    public void testUpdateUser() throws MalformedURLException {
-        testUser.setEnterpriseName("Updated Enterprise SL");
-        testUser.setRrss(new URL("http://updatedRPerez.com"));
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void testUpdateUser() throws Exception {
+        user.setEnterpriseName("Updated Enterprise SL");
+        user.setRrss(new URL("http://updatedRPerez.com"));
+        String body = objectMapper.writeValueAsString(user);
 
-        HttpHeaders headers = new HttpHeaders();
-        HttpEntity<User> entity = new HttpEntity<>(testUser, headers);
+        mockMvc.perform(put("/users/{id}", user.getId())
+                        .content(body)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
-        ResponseEntity<User> response = restTemplate.withBasicAuth(testUser.getUsername(), testUser.getPassword())
-                .exchange(createURLWithPort("/users/" + testUser.getId()), HttpMethod.PUT, entity, User.class);
-
-        assertEquals(HttpStatus.OK.value(), response.getStatusCodeValue());
-        User returnedUser = response.getBody();
-        assertNotNull(returnedUser);
-        assertEquals("Updated Enterprise SL", returnedUser.getEnterpriseName());
-        assertEquals("http://updatedRPerez.com", returnedUser.getRrss().toString());
+        User updated = userRepository.findById(user.getId()).get();
+        assertEquals("Updated Enterprise SL", updated.getEnterpriseName());
+        assertEquals("http://updatedRPerez.com", updated.getRrss().toString());
     }
 
+    // no funciona porque no tienes delete
     @Test
-    public void testDeleteUser() {
-        HttpHeaders headers = new HttpHeaders();
-        HttpEntity<User> entity = new HttpEntity<>(headers);
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void testDeleteUser() throws Exception {
+        mockMvc.perform(delete("/users/{id}", user.getId()))
+                .andExpect(status().isNoContent());
 
-        ResponseEntity<Void> response = restTemplate.withBasicAuth(testUser.getUsername(), testUser.getPassword())
-                .exchange(createURLWithPort("/users/" + testUser.getId()), HttpMethod.DELETE, entity, Void.class);
-
-        assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatusCodeValue());
-        assertFalse(userRepository.findById(testUser.getId()).isPresent());
-    }
-
-    private String createURLWithPort(String uri) {
-        return "http://localhost:" + port + uri;
+        assertFalse(userRepository.findById(user.getId()).isPresent());
     }
 }

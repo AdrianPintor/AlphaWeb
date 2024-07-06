@@ -51,26 +51,26 @@ public class SecurityConfig {
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.authorizeHttpRequests((requests) -> requests
                 .requestMatchers("/api/login/**").permitAll()
-                .requestMatchers(GET, "/api/users").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
-                .requestMatchers(POST, "/api/users").hasAnyAuthority("ROLE_ADMIN")
-                .requestMatchers(POST, "/api/roles").hasAnyAuthority("ROLE_ADMIN")
-                .requestMatchers(POST, "/api/roles/add-to-user").hasAnyAuthority("ROLE_ADMIN")
+                .requestMatchers(GET, "/users").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                .requestMatchers(POST, "/users").hasAnyAuthority("ROLE_ADMIN")
+                .requestMatchers(POST, "/roles").hasAnyAuthority("ROLE_ADMIN")
+                .requestMatchers(POST, "/roles/add-to-user").hasAnyAuthority("ROLE_ADMIN")
                 .anyRequest().authenticated());
         http.addFilter(customAuthenticationFilter);
         http.addFilterBefore(new CustomAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
-
-    @Bean
-    public InMemoryUserDetailsManager userDetailsService() {
-        UserDetails user = User.withUsername("user")
-                .password(encoder().encode("password"))
-                .roles("USER")
-                .build();
-        UserDetails admin = User.withUsername("admin")
-                .password(encoder().encode("admin"))
-                .roles("ADMIN")
-                .build();
-        return new InMemoryUserDetailsManager(user, admin);
-    }
+//
+//    @Bean
+//    public InMemoryUserDetailsManager userDetailsService() {
+//        UserDetails user = User.withUsername("user")
+//                .password(encoder().encode("password"))
+//                .roles("USER")
+//                .build();
+//        UserDetails admin = User.withUsername("admin")
+//                .password(encoder().encode("admin"))
+//                .roles("ADMIN")
+//                .build();
+//        return new InMemoryUserDetailsManager(user, admin);
+//    }
 }

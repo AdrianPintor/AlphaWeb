@@ -1,6 +1,7 @@
 package com.alphaeventos.alphaweb.controller;
 
 import com.alphaeventos.alphaweb.repository.UserRepository;
+import com.alphaeventos.alphaweb.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,16 +18,16 @@ import java.util.Optional;
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
     @GetMapping
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userService.findAll();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        Optional<User> user = userRepository.findById(id);
+        Optional<User> user = userService.findById(id);
         if (user.isPresent()) {
             return ResponseEntity.ok(user.get());
         } else {
@@ -37,34 +38,30 @@ public class UserController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public User createUser(@Valid @RequestBody User user) {
-        return userRepository.save(user);
+        return userService.save(user);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User userDetails) throws MalformedURLException {
-        Optional<User> optionalUser = userRepository.findById(id);
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            user.setEnterpriseName(userDetails.getEnterpriseName());
-            user.setPersonalName(userDetails.getPersonalName());
-            user.setEmail(userDetails.getEmail());
-            user.setTelephoneContact(userDetails.getTelephoneContact());
-            user.setUsername(userDetails.getUsername());
-            user.setPassword(userDetails.getPassword());
-            user.setAddress(userDetails.getAddress());
-            user.setRrss(userDetails.getRrss());
-            User updatedUser = userRepository.save(user);
-            return ResponseEntity.ok(updatedUser);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+        return userService.findById(id)
+                .map(existingUser -> {
+                    existingUser.setEnterpriseName(user.getEnterpriseName());
+                    existingUser.setPersonalName(user.getPersonalName());
+                    existingUser.setEmail(user.getEmail());
+                    existingUser.setTelephoneContact(user.getTelephoneContact());
+                    existingUser.setAddress(user.getAddress());
+                    existingUser.setRrss(user.getRrss());
+                    User updatedUser = userService.save(existingUser);
+                    return ResponseEntity.ok(updatedUser);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        Optional<User> optionalUser = userRepository.findById(id);
+        Optional<User> optionalUser = userService.findById(id);
         if (optionalUser.isPresent()) {
-            userRepository.delete(optionalUser.get());
+            userService.delete(optionalUser.get().getId());
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();

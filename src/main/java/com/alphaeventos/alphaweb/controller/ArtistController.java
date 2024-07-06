@@ -1,7 +1,9 @@
 package com.alphaeventos.alphaweb.controller;
 
 import com.alphaeventos.alphaweb.models.Artist;
+import com.alphaeventos.alphaweb.models.User;
 import com.alphaeventos.alphaweb.services.ArtistService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,9 +38,8 @@ public class ArtistController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<Artist> createArtist(@RequestBody Artist artist) {
-        Artist savedArtist = artistService.save(artist);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedArtist);
+    public Artist createArtist(@Valid @RequestBody Artist artist) {
+        return artistService.save(artist);
     }
 
     @PutMapping("/{id}")
@@ -47,14 +48,12 @@ public class ArtistController {
         if (existingArtist == null) {
             return ResponseEntity.notFound().build();
         }
-        // Update the existing artist with new information
         existingArtist.setArtisticName(artist.getArtisticName());
         existingArtist.setPhotosVideos(artist.getPhotosVideos());
         existingArtist.setPersonalInformation(artist.getPersonalInformation());
         existingArtist.setRrss(artist.getRrss());
         existingArtist.setTechnicalRider(artist.getTechnicalRider());
 
-        // Save the updated artist
         Artist updatedArtist = artistService.save(existingArtist);
         return ResponseEntity.ok(updatedArtist);
     }
