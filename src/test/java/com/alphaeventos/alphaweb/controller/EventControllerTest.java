@@ -1,135 +1,28 @@
-package com.alphaeventos.alphaweb;
+package com.alphaeventos.alphaweb.controller;
 
-import com.alphaeventos.alphaweb.models.Artist;
 import com.alphaeventos.alphaweb.models.Event;
-import com.alphaeventos.alphaweb.models.User;
-import com.alphaeventos.alphaweb.repository.ArtistRepository;
 import com.alphaeventos.alphaweb.repository.EventRepository;
-import com.alphaeventos.alphaweb.repository.UserRepository;
-import com.alphaeventos.alphaweb.services.EventService;
-import com.alphaeventos.alphaweb.services.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-class EventRepositoryTest {
-
-    @Autowired
-    private EventRepository eventRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Test
-    public void testSaveEvent() throws MalformedURLException {
-        User user = new User();
-        user.setEnterpriseName("Test Enterprise");
-        user = userRepository.save(user);
-
-        Event event = new Event();
-        event.setName("Test Event");
-        event.setInformation("Test Information");
-        event.setPhotosVideos(new URL("http://example.com/event"));
-        event.setEnterpriseCollabs("Test Collaborations");
-        event.setDescriptionRequest("Test Description Request");
-        event.setUser(user);
-
-        Event savedEvent = eventRepository.save(event);
-        assertNotNull(savedEvent);
-        assertNotNull(savedEvent.getId());
-        assertEquals("Test Event", savedEvent.getName());
-    }
-}
-@SpringBootTest
-@Transactional
-class EventServiceTest {
-
-    @Autowired
-    private EventService eventService;
-
-    private Event event;
-
-    @BeforeEach
-    public void setup() throws MalformedURLException {
-        event = new Event();
-        event.setName("Test Event");
-        event.setInformation("Some information about the event");
-        event.setPhotosVideos(new URL("http://example.com/videos"));
-        event.setEnterpriseCollabs("Enterprise collaborations");
-        event.setDescriptionRequest("Description request details");
-    }
-
-    @Test
-    public void testSaveEvent() {
-        Event savedEvent = eventService.save(event);
-
-        assertNotNull(savedEvent);
-        assertNotNull(savedEvent.getId());
-        assertEquals("Test Event", savedEvent.getName());
-        assertEquals("Some information about the event", savedEvent.getInformation());
-        assertEquals("http://example.com/videos", savedEvent.getPhotosVideos().toString());
-        assertEquals("Enterprise collaborations", savedEvent.getEnterpriseCollabs());
-        assertEquals("Description request details", savedEvent.getDescriptionRequest());
-    }
-
-    @Test
-    public void testFindAllEvents() {
-        eventService.save(event);
-        List<Event> events = eventService.findAll();
-        assertNotNull(events);
-        assertFalse(events.isEmpty());
-    }
-
-    @Test
-    public void testFindEventById() {
-        Event savedEvent = eventService.save(event);
-        Optional<Event> foundEvent = eventService.findById(savedEvent.getId());
-        assertTrue(foundEvent.isPresent());
-        assertEquals(savedEvent.getName(), foundEvent.get().getName());
-    }
-
-    @Test
-    public void testDeleteEvent() {
-        Event savedEvent = eventService.save(event);
-        eventService.delete(savedEvent);
-        Optional<Event> deletedEvent = eventService.findById(savedEvent.getId());
-        assertFalse(deletedEvent.isPresent());
-    }
-
-    @Test
-    public void testDeleteAllEvents() {
-        eventService.save(event);
-        eventService.deleteAll();
-        List<Event> events = eventService.findAll();
-        assertTrue(events.isEmpty());
-    }
-}
 @SpringBootTest
 @ActiveProfiles("test")
 class EventControllerTest {

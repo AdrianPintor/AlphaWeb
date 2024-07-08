@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/contracts")
@@ -21,17 +22,16 @@ public class ContractController {
     @GetMapping
     public ResponseEntity<List<Contract>> getAllContracts() {
         List<Contract> contracts = contractService.findAll();
-        return ResponseEntity.ok(contracts);
+        return new ResponseEntity<>(contracts, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Contract> getContractById(@PathVariable Long id) {
-        Contract contract = contractService.findById(id).orElse(null);
-        if (contract == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(contract);
+        Optional<Contract> contract = contractService.findById(id);
+        return contract.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
+
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

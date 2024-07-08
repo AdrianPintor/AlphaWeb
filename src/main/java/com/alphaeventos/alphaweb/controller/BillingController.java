@@ -1,9 +1,11 @@
 package com.alphaeventos.alphaweb.controller;
 
 import com.alphaeventos.alphaweb.models.Billing;
+import com.alphaeventos.alphaweb.models.Event;
 import com.alphaeventos.alphaweb.services.BillingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,9 +23,11 @@ public class BillingController {
         return billingService.findAll();
     }
 
-    @GetMapping("billings/{id}")
-    public Optional<Billing> getBillingById(@PathVariable Long id) {
-        return billingService.findById(id);
+    @GetMapping("/{id}")
+    public ResponseEntity<Billing> getBillingById(@PathVariable Long id) {
+        Optional<Billing> billing = billingService.findById(id);
+        return billing.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
@@ -40,6 +44,6 @@ public class BillingController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteBilling(@PathVariable Long id) {
-        billingService.delete(id);
+        billingService.deleteById(id);
     }
 }

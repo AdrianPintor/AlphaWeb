@@ -9,5 +9,4 @@ class AlphaWebApplicationTests {
     @Test
     void contextLoads() {
     }
-
 }

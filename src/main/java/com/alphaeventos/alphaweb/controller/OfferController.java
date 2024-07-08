@@ -4,6 +4,7 @@ import com.alphaeventos.alphaweb.models.Offer;
 import com.alphaeventos.alphaweb.services.OfferService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,8 +23,10 @@ public class OfferController {
     }
 
     @GetMapping("/{id}")
-    public Optional<Offer> getOfferById(@PathVariable Long id) {
-        return offerService.findById(id);
+    public ResponseEntity<Offer> getOfferById(@PathVariable Long id) {
+        Optional<Offer> offer = offerService.findById(id);
+        return offer.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping
@@ -33,8 +36,18 @@ public class OfferController {
     }
 
     @PutMapping("/{id}")
-    public Offer updateOffer(@PathVariable Long id, @RequestBody Offer offer) {
-        return offerService.save(offer);
+    public ResponseEntity<Offer> updateOffer(@PathVariable Long id, @RequestBody Offer offerDetails) {
+        Optional<Offer> offerOptional = offerService.findById(id);
+        if (offerOptional.isPresent()) {
+            Offer offer = offerOptional.get();
+            offer.setDate(offerDetails.getDate());
+            offer.setTerms(offerDetails.getTerms());
+            offer.setEvent(offerDetails.getEvent());
+            Offer updatedOffer = offerService.save(offer);
+            return ResponseEntity.ok(updatedOffer);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")
