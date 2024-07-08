@@ -25,7 +25,7 @@ public class User {
     private String email;
     private int telephoneContact;
     private String address;
-    private URL rrss;  // Redes Sociales
+    private URL rrss;
 
     @OneToMany(mappedBy = "user")
     private List<Event> events;

@@ -1,5 +1,6 @@
 package com.alphaeventos.alphaweb.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,6 +20,7 @@ public class Performance {
     private String location;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "artist_calendar_id")
     private ArtistCalendar artistCalendar;
 
