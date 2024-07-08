@@ -127,7 +127,7 @@ class ArtistServiceTest {
     public void testGetAllArtists() {
         artistRepository.save(artist);
         List<Artist> fetchedArtists = artistRepository.findAll();
-        assertEquals("Artist Name", fetchedArtists.get(0).getArtisticName());
+        assertEquals("Aiko Tanaka", fetchedArtists.get(0).getArtisticName());
     }
 
     @Test
@@ -217,7 +217,7 @@ class ArtistControllerTest {
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     void testCreateArtist() throws Exception {
         Artist newArtist = new Artist();
-        newArtist.setArtisticName("Artist Name");
+        newArtist.setArtisticName("New Artist Name");
         newArtist.setPhotosVideos(new URL("http://example.com/videos"));
         newArtist.setPersonalInformation("Some personal information");
         newArtist.setRrss(new URL("http://example.com/social"));

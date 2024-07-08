@@ -1,10 +1,9 @@
 package com.alphaeventos.alphaweb;
 
-import com.alphaeventos.alphaweb.models.Artist;
-import com.alphaeventos.alphaweb.models.Role;
-import com.alphaeventos.alphaweb.models.User;
+import com.alphaeventos.alphaweb.models.*;
 import com.alphaeventos.alphaweb.services.ArtistService;
 import com.alphaeventos.alphaweb.services.UserService;
+import com.alphaeventos.alphaweb.services.BillingService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,7 +1,6 @@
 package com.alphaeventos.alphaweb.controller;
 
 import com.alphaeventos.alphaweb.models.Artist;
-import com.alphaeventos.alphaweb.models.User;
 import com.alphaeventos.alphaweb.services.ArtistService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,7 +23,7 @@ public class ArtistController {
     @GetMapping
     public ResponseEntity<List<Artist>> getAllArtists() {
         List<Artist> artists = artistService.findAll();
-        return ResponseEntity.ok(artists);
+        return new ResponseEntity<>(artists, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
@@ -64,7 +63,7 @@ public class ArtistController {
         if (artist == null) {
             return ResponseEntity.notFound().build();
         }
-        artistService.delete(artist);
+        artistService.deleteById(artist.getId());
         return ResponseEntity.noContent().build();
     }
 }

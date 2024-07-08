@@ -1,6 +1,7 @@
 package com.alphaeventos.alphaweb.services;
 
 import com.alphaeventos.alphaweb.models.Event;
+import com.alphaeventos.alphaweb.repository.ContractRepository;
 import com.alphaeventos.alphaweb.repository.EventRepository;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +12,11 @@ import java.util.Optional;
 public class EventService {
 
     private final EventRepository eventRepository;
+    private final ContractRepository contractRepository;
 
-    public EventService(EventRepository eventRepository) {
+    public EventService(EventRepository eventRepository, ContractRepository contractRepository) {
         this.eventRepository = eventRepository;
+        this.contractRepository = contractRepository;
     }
 
     public List<Event> findAll() {
@@ -34,5 +37,6 @@ public class EventService {
 
     public void deleteAll() {
         eventRepository.deleteAll();
+        contractRepository.deleteAll();
     }
 }

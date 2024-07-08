@@ -17,7 +17,7 @@ public class Artist {
     private String artisticName;
     private URL photosVideos;
     private String personalInformation;
-    private URL rrss;  // Redes Sociales
+    private URL rrss;
     private String technicalRider;
 
     @OneToOne(mappedBy = "artist")

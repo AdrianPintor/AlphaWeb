@@ -1,11 +1,21 @@
 package com.alphaeventos.alphaweb;
 
+import com.alphaeventos.alphaweb.models.Artist;
 import com.alphaeventos.alphaweb.models.Event;
 import com.alphaeventos.alphaweb.models.User;
+import com.alphaeventos.alphaweb.repository.ArtistRepository;
 import com.alphaeventos.alphaweb.repository.EventRepository;
 import com.alphaeventos.alphaweb.repository.UserRepository;
 import com.alphaeventos.alphaweb.services.EventService;
 import com.alphaeventos.alphaweb.services.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -22,6 +33,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 class EventRepositoryTest {
@@ -116,68 +130,97 @@ class EventServiceTest {
         assertTrue(events.isEmpty());
     }
 }
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Transactional
+@SpringBootTest
+@ActiveProfiles("test")
 class EventControllerTest {
 
     @Autowired
-    private TestRestTemplate restTemplate;
+    private WebApplicationContext webApplicationContext;
 
     @Autowired
-    private UserService userService;
+    private EventRepository eventRepository;
 
-    @Autowired
-    private EventService eventService;
-
-    private User user;
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper = new ObjectMapper();
+    private Event event;
 
     @BeforeEach
-    public void setup() {
-        user = new User();
-        user.setEnterpriseName("Test Enterprise");
-        user = userService.save(user);
-    }
+    void setUp() throws MalformedURLException {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 
-    @Test
-    public void testGetAllEvents() {
-        ResponseEntity<List> response = restTemplate.getForEntity("/events", List.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        List<Event> events = response.getBody();
-        assertNotNull(events);
-    }
-
-    @Test
-    public void testGetEventById() throws MalformedURLException {
-        Event event = new Event();
+        event = new Event();
         event.setName("Test Event");
         event.setInformation("Test Information");
         event.setPhotosVideos(new URL("http://example.com/event"));
         event.setEnterpriseCollabs("Test Collaborations");
         event.setDescriptionRequest("Test Description Request");
-        event.setUser(user);
+        eventRepository.save(event);
+    }
 
-        Event savedEvent = eventService.save(event);
-        ResponseEntity<Event> response = restTemplate.getForEntity("/events/" + savedEvent.getId(), Event.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        Event fetchedEvent = response.getBody();
-        assertNotNull(fetchedEvent);
-        assertEquals("Test Event", fetchedEvent.getName());
+    @AfterEach
+    void tearDown() {
+        eventRepository.deleteAll();
     }
 
     @Test
-    public void testCreateEvent() throws MalformedURLException {
-        Event event = new Event();
-        event.setName("Test Event");
-        event.setInformation("Test Information");
-        event.setPhotosVideos(new URL("http://example.com/event"));
-        event.setEnterpriseCollabs("Test Collaborations");
-        event.setDescriptionRequest("Test Description Request");
-        event.setUser(user);
+    void testGetAllEvents() throws Exception {
+        MvcResult result = mockMvc.perform(get("/events"))
+                .andExpect(status().isOk())
+                .andReturn();
 
-        ResponseEntity<Event> response = restTemplate.postForEntity("/events", event, Event.class);
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        Event createdEvent = response.getBody();
-        assertNotNull(createdEvent.getId());
-        assertEquals("Test Event", createdEvent.getName());
+        assertTrue(result.getResponse().getContentAsString().contains("Test Event"));
+    }
+
+    @Test
+    void testGetEventById() throws Exception {
+        MvcResult result = mockMvc.perform(get("/events/{id}", event.getId()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertTrue(result.getResponse().getContentAsString().contains("Test Event"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void testCreateEvent() throws Exception {
+        Event newEvent = new Event();
+        newEvent.setName("New Event");
+        newEvent.setInformation("New Information");
+        newEvent.setPhotosVideos(new URL("http://example.com/new-event"));
+        newEvent.setEnterpriseCollabs("New Collaborations");
+        newEvent.setDescriptionRequest("New Description Request");
+        String body = objectMapper.writeValueAsString(newEvent);
+
+        MvcResult result = mockMvc.perform(post("/events")
+                        .content(body)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        assertTrue(result.getResponse().getContentAsString().contains("New Event"));
+    }
+
+    @Test
+    void testUpdateEvent() throws Exception {
+        event.setName("Updated Event Name");
+        event.setInformation("Updated Information");
+        String body = objectMapper.writeValueAsString(event);
+
+        mockMvc.perform(put("/events/{id}", event.getId())
+                        .content(body)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        Event updated = eventRepository.findById(event.getId()).get();
+        assertEquals("Updated Event Name", updated.getName());
+        assertEquals("Updated Information", updated.getInformation());
+    }
+
+    @Test
+    void testDeleteEvent() throws Exception {
+        mockMvc.perform(delete("/events/{id}", event.getId()))
+                .andExpect(status().isNoContent());
+
+        assertFalse(eventRepository.findById(event.getId()).isPresent());
     }
 }

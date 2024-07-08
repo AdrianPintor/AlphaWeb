@@ -4,15 +4,21 @@ import com.alphaeventos.alphaweb.models.Performance;
 import com.alphaeventos.alphaweb.repository.PerformanceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class PerformanceService {
 
+    private final PerformanceRepository performanceRepository;
+
     @Autowired
-    private PerformanceRepository performanceRepository;
+    public PerformanceService(PerformanceRepository performanceRepository) {
+        this.performanceRepository = performanceRepository;
+    }
 
     public List<Performance> findAll() {
         return performanceRepository.findAll();
@@ -26,12 +32,7 @@ public class PerformanceService {
         return performanceRepository.save(performance);
     }
 
-    public void delete(Long id) {
+    public void deleteById(Long id) {
         performanceRepository.deleteById(id);
     }
-
-    public void deleteAll() {
-        performanceRepository.deleteAll();
-    }
 }
-

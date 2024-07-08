@@ -26,8 +26,6 @@ public class UserService {
     public User save(User user) {
         if (user.getPassword() != null) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
-        } else {
-            throw new IllegalArgumentException("Password cannot be null");
         }
         return userRepository.save(user);
     }

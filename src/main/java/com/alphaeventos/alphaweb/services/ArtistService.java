@@ -4,15 +4,20 @@ import com.alphaeventos.alphaweb.models.Artist;
 import com.alphaeventos.alphaweb.repository.ArtistRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class ArtistService {
 
+    private final ArtistRepository artistRepository;
+
     @Autowired
-    private ArtistRepository artistRepository;
+    public ArtistService(ArtistRepository artistRepository) {
+        this.artistRepository = artistRepository;
+    }
 
     public List<Artist> findAll() {
         return artistRepository.findAll();
@@ -26,16 +31,11 @@ public class ArtistService {
         return artistRepository.save(artist);
     }
 
+    public Artist update(Artist artist) {
+        return artistRepository.save(artist);
+    }
+
     public void deleteById(Long id) {
         artistRepository.deleteById(id);
     }
-
-    public void delete(Artist artist) {
-        artistRepository.delete(artist);
-    }
-
-    public void deleteAll() {
-        artistRepository.deleteAll();
-    }
 }
-

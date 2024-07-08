@@ -21,7 +21,7 @@ public class BillingController {
         return billingService.findAll();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("billings/{id}")
     public Optional<Billing> getBillingById(@PathVariable Long id) {
         return billingService.findById(id);
     }
